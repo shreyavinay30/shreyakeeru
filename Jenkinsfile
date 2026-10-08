@@ -1,51 +1,64 @@
-pipeline{
-agent any
-environment{
-DOCKER_IMAGE="shreyavinay30/shreya-image"
+pipeline {
+    agent any
 
-}
-stages{
-stage('Clone Respository')}
-steps{
-git 'https://github.com/shreyavinay30/shreyakeeru.git'
-}
-}
-stage('Build Docker Image'){
-steps{
-script{
-docker.build("$(DOCKER_IMAGE):v1")
-}
-}
-}
+    environment {
+        DOCKER_IMAGE = "shreyavinay30/shreya-image"
+    }
 
-stage('Login to Docker Hub'){
-steps{
-   withcredentials([usernamePassword(
-    credentialsId: 'dockerhub-creds',
-     usernameVarible: 'DOCKER_USER',
-passwordVariable: 'DOCKER_PASS'
-)])}
- bat 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-}
-}
-}
+    stages {
 
-stage('Push Docker Image'){
-steps{
-     script{
-               docker.withRegistry('','dockerhub-creds'){
-                  docker.image("$(DOCKER_IMAGE):v1").push()
-}
-}
-}
-}
-}
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/shreyavinay30/shreyakeeru.git'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                echo 'Building application...'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${DOCKER_IMAGE}:latest")
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('', 'dockerhub-creds') {
+                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    }
+                }
+            }
+        }
+    }
+
     post {
-          success{
-             echo 'Image successfully built and pushed to Docker Hub'
+        success {
+            echo 'Image successfully built, tagged and pushed to Docker Hub'
+        }
+
+        failure {
+            echo 'Pipeline failed'
+        }
+    }
 }
-   failure{
-echo 'Pipeline failed'
-}
-}
-}DOCKER_USER
