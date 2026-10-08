@@ -10,7 +10,7 @@ steps{
 git 'https://github.com/shreyavinay30/shreyakeeru.git'
 }
 }
-stage('Build Docker Image')}
+stage('Build Docker Image'){
 steps{
 script{
 docker.build("$(DOCKER_IMAGE):v1")
