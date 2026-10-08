@@ -3,49 +3,41 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "shreyavinay30/shreya-image"
+        DOCKER_CREDS = "dockerhub-creds"
     }
 
     stages {
-
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/shreyavinay30/shreyakeeru.git'
-            }
-        }
-
         stage('Build Application') {
             steps {
                 echo 'Building application...'
+                // Add your build commands here if needed (e.g., bat 'mvn clean package')
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:latest")
+                    echo "Building Docker image ${DOCKER_IMAGE}:latest..."
+                    bat "docker build -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Login & Push to Docker Hub') {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'dockerhub-creds',
+                        credentialsId: "${DOCKER_CREDS}",
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                     )
                 ]) {
-                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('', 'dockerhub-creds') {
-                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    script {
+                        echo "Logging in to Docker Hub..."
+                        bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                        
+                        echo "Pushing image ${DOCKER_IMAGE}:latest..."
+                        bat "docker push ${DOCKER_IMAGE}:latest"
                     }
                 }
             }
@@ -54,11 +46,10 @@ pipeline {
 
     post {
         success {
-            echo 'Image successfully built, tagged and pushed to Docker Hub'
+            echo 'Image successfully built, tagged, and pushed to Docker Hub.'
         }
-
         failure {
-            echo 'Pipeline failed'
+            echo 'Pipeline failed. Check the logs above for errors.'
         }
     }
 }
