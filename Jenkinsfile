@@ -10,7 +10,6 @@ pipeline {
         stage('Build Application') {
             steps {
                 echo 'Building application...'
-                // Add your build commands here if needed (e.g., bat 'mvn clean package')
             }
         }
 
